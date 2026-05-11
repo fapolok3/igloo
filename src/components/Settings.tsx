@@ -15,7 +15,7 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { formatCurrency, Storage } from '../utils';
+import { formatCurrency } from '../utils';
 
 interface SettingsProps {
   products: Product[];
@@ -36,12 +36,6 @@ export default function Settings({ products, members, onUpdateProducts, onUpdate
 
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
-
-  const handleClearAll = () => {
-    if (window.confirm('WARNING: This will delete ALL data (Orders, Products, Members, logs). This action cannot be undone. Are you sure?')) {
-        Storage.clearAll();
-    }
-  };
 
   const startEditProduct = (p: Product) => {
     setEditingProductId(p.id);
@@ -279,22 +273,6 @@ export default function Settings({ products, members, onUpdateProducts, onUpdate
            </p>
         </div>
 
-        {/* Danger Zone */}
-        <div className="bg-red-50 border border-red-200 p-6 rounded-xl space-y-4">
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertTriangle className="w-5 h-5" />
-            <h3 className="font-bold uppercase tracking-widest text-sm">Danger Zone</h3>
-          </div>
-          <p className="text-xs text-red-600 font-medium">
-            To delete the demo data and start with a fresh system, click the button below. This will wipe all current records.
-          </p>
-          <button 
-            onClick={handleClearAll}
-            className="w-full py-3 bg-red-600 text-white rounded-lg font-black uppercase italic tracking-widest text-xs hover:bg-red-700 transition-all shadow-lg shadow-red-200"
-          >
-            Clear All Demo Data & Reset System
-          </button>
-        </div>
       </div>
     </div>
   );

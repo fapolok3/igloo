@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import OrderEntry from './components/OrderEntry';
 import Reports from './components/Reports';
@@ -12,10 +13,9 @@ import WeeklyReport from './components/WeeklyReport';
 import MonthlyReport from './components/MonthlyReport';
 import YearlyReport from './components/YearlyReport';
 import Settings from './components/Settings';
-import { View, Order, Product, TeamMember } from './types';
+import { Order, Product, TeamMember } from './types';
 import { fetchIP } from './utils';
 import { dataService } from './services/dataService';
-import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -24,19 +24,13 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export default function App() {
-  const [currentView, setCurrentView] = useState<View>('Dashboard');
+function AppContent() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [time, setTime] = useState(new Date());
-
-  // Update time every second
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Initialize and load data
   useEffect(() => {
@@ -78,18 +72,12 @@ export default function App() {
   };
 
   const handleUpdateProducts = async (updated: Product[]) => {
-    // Collect the current products to identify deletions
     const currentProducts = [...products];
     setProducts(updated);
-    
-    // Simple sync: upsert current list
     await dataService.syncProducts(updated);
-    
-    // Handle deletions (find what's in current but not in updated)
     const deletedIds = currentProducts
       .filter(p => !updated.find(u => u.id === p.id))
       .map(p => p.id);
-    
     for (const id of deletedIds) {
       await dataService.deleteProduct(id);
     }
@@ -98,86 +86,60 @@ export default function App() {
   const handleUpdateMembers = async (updated: TeamMember[]) => {
     const currentMembers = [...members];
     setMembers(updated);
-    
     await dataService.syncMembers(updated);
-    
     const deletedIds = currentMembers
       .filter(m => !updated.find(u => u.id === m.id))
       .map(m => m.id);
-    
     for (const id of deletedIds) {
       await dataService.deleteMember(id);
     }
   };
 
-  const handleSetView = (view: View) => {
-    setIsLoading(true);
-    setCurrentView(view);
-    setTimeout(() => setIsLoading(false), 400);
-  };
+  const navigation = [
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
+    { id: 'order-entry', label: 'Order Entry', path: '/order-entry' },
+    { id: 'reports', label: 'Reports', path: '/reports' },
+    { id: 'daily', label: 'Daily', path: '/daily' },
+    { id: 'weekly', label: 'Weekly', path: '/weekly' },
+    { id: 'monthly', label: 'Monthly', path: '/monthly' },
+    { id: 'yearly', label: 'Yearly', path: '/yearly' },
+    { id: 'settings', label: 'Settings', path: '/settings' },
+  ];
 
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
-          <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
-          <p className="text-slate-400 font-medium animate-pulse">Syncing Igloo Order Management data...</p>
-        </div>
-      );
-    }
-
-    switch (currentView) {
-      case 'Dashboard':
-        return <Dashboard orders={orders} />;
-      case 'OrderEntry':
-        return <OrderEntry products={products} members={members} onAddOrder={handleAddOrder} />;
-      case 'Reports':
-        return <Reports 
-            orders={orders} 
-            products={products} 
-            members={members} 
-            onUpdateOrder={handleUpdateOrder}
-        />;
-      case 'DailyReport':
-        return <DailyReport orders={orders} />;
-      case 'WeeklyReport':
-        return <WeeklyReport orders={orders} />;
-      case 'MonthlyReport':
-        return <MonthlyReport orders={orders} />;
-      case 'YearlyReport':
-        return <YearlyReport orders={orders} />;
-      case 'Settings':
-        return <Settings 
-          products={products} 
-          members={members} 
-          onUpdateProducts={handleUpdateProducts}
-          onUpdateMembers={handleUpdateMembers}
-        />;
-      default:
-        return <Dashboard orders={orders} />;
-    }
-  };
+  const currentPath = location.pathname;
 
   const pageTitle = useMemo(() => {
-    const items: Record<View, string> = {
-      Dashboard: 'System Overview',
-      OrderEntry: 'Create New Order',
-      Reports: 'Full Order Archives',
-      DailyReport: 'Daily Operational Audit',
-      WeeklyReport: 'Weekly Performance Report',
-      MonthlyReport: 'Monthly Analysis Report',
-      YearlyReport: 'Yearly Performance Review',
-      Settings: 'System Configuration',
+    const activeItem = navigation.find(item => item.path === currentPath);
+    if (!activeItem) return 'Igloo Order Management';
+
+    const titles: Record<string, string> = {
+      '/dashboard': 'System Overview',
+      '/order-entry': 'Create New Order',
+      '/reports': 'Full Order Archives',
+      '/daily': 'Daily Operational Audit',
+      '/weekly': 'Weekly Performance Report',
+      '/monthly': 'Monthly Analysis Report',
+      '/yearly': 'Yearly Performance Review',
+      '/settings': 'System Configuration',
     };
-    return items[currentView];
-  }, [currentView]);
+    return titles[currentPath] || 'Operational Control Panel';
+  }, [currentPath]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
+        <p className="text-slate-400 font-medium animate-pulse">Syncing Igloo Order Management data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-900">
       {/* Header with Navigation */}
       <header className="h-14 bg-[#1E293B] text-white border-b border-slate-700 px-6 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-6">
-          <div className="flex items-center pr-4 border-r border-slate-700 h-10">
+          <div className="flex items-center pr-4 border-r border-slate-700 h-10 cursor-pointer" onClick={() => navigate('/dashboard')}>
             <img 
               src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSTsobmon4-n5hbXve4D3gt7ltmqYsdw7brTg&s" 
               alt="Logo" 
@@ -187,43 +149,21 @@ export default function App() {
           </div>
           
           <nav className="flex items-center gap-1">
-            {[
-              { id: 'Dashboard', label: 'Dashboard' },
-              { id: 'OrderEntry', label: 'Order Entry' },
-              { id: 'Reports', label: 'Reports' },
-              { id: 'DailyReport', label: 'Daily' },
-              { id: 'WeeklyReport', label: 'Weekly' },
-              { id: 'MonthlyReport', label: 'Monthly' },
-              { id: 'YearlyReport', label: 'Yearly' },
-              { id: 'Settings', label: 'Settings' },
-            ].map((item) => (
-              <button
+            {navigation.map((item) => (
+              <Link
                 key={item.id}
-                onClick={() => handleSetView(item.id as View)}
+                to={item.path}
                 className={cn(
                   "px-3 py-1.5 rounded-md transition-colors text-xs font-bold uppercase tracking-wider",
-                  currentView === item.id 
+                  currentPath === item.path 
                     ? "bg-[#2563EB] text-white" 
                     : "text-slate-400 hover:text-white hover:bg-slate-800"
                 )}
               >
                 {item.label}
-              </button>
+              </Link>
             ))}
           </nav>
-        </div>
-
-        <div className="flex items-center gap-4 border-l border-slate-700 pl-4 h-8">
-           <div className="text-right">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Date:</span>
-                <span className="text-xs font-bold text-slate-300">{format(time, 'dd MMM yyyy')}</span>
-              </div>
-              <div className="flex items-center gap-2 justify-end">
-                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Time:</span>
-                <span className="text-xs font-black text-white tabular-nums">{format(time, 'hh:mm:ss a')}</span>
-              </div>
-           </div>
         </div>
       </header>
       
@@ -237,13 +177,29 @@ export default function App() {
         <div className="p-6 flex-1">
           <AnimatePresence mode="wait">
              <motion.div
-               key={currentView + isLoading}
+               key={currentPath}
                initial={{ opacity: 0, y: 10 }}
                animate={{ opacity: 1, y: 0 }}
                exit={{ opacity: 0, y: -10 }}
                transition={{ duration: 0.2 }}
              >
-               {renderContent()}
+               <Routes>
+                  <Route path="/dashboard" element={<Dashboard orders={orders} />} />
+                  <Route path="/order-entry" element={<OrderEntry products={products} members={members} onAddOrder={handleAddOrder} />} />
+                  <Route path="/reports" element={<Reports orders={orders} products={products} members={members} onUpdateOrder={handleUpdateOrder} />} />
+                  <Route path="/daily" element={<DailyReport orders={orders} />} />
+                  <Route path="/weekly" element={<WeeklyReport orders={orders} />} />
+                  <Route path="/monthly" element={<MonthlyReport orders={orders} />} />
+                  <Route path="/yearly" element={<YearlyReport orders={orders} />} />
+                  <Route path="/settings" element={<Settings 
+                    products={products} 
+                    members={members} 
+                    onUpdateProducts={handleUpdateProducts}
+                    onUpdateMembers={handleUpdateMembers}
+                  />} />
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+               </Routes>
              </motion.div>
           </AnimatePresence>
         </div>
@@ -251,3 +207,12 @@ export default function App() {
     </div>
   );
 }
+
+export default function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
+}
+
