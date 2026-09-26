@@ -57,3 +57,32 @@ DO $$ BEGIN
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
+
+-- 6. Create kb_items table (FB Customer Reply Knowledge Base)
+CREATE TABLE IF NOT EXISTS kb_items (
+    id TEXT PRIMARY KEY,
+    category TEXT NOT NULL DEFAULT 'general',
+    categoryLabel TEXT NOT NULL DEFAULT 'General FAQs',
+    topic TEXT NOT NULL,
+    question TEXT,
+    englishReply TEXT NOT NULL,
+    banglaReply TEXT NOT NULL,
+    tags TEXT[] DEFAULT '{}',
+    isCustom BOOLEAN DEFAULT true,
+    createdAt TIMESTAMPTZ DEFAULT NOW(),
+    updatedAt TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS for kb_items
+ALTER TABLE kb_items ENABLE ROW LEVEL SECURITY;
+
+-- Policy for kb_items (Public Read/Write Access for anon key)
+DO $$ BEGIN
+    CREATE POLICY "Public Read/Write Access" ON kb_items FOR ALL USING (true) WITH CHECK (true);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Indexes for fast query performance
+CREATE INDEX IF NOT EXISTS idx_kb_items_category ON kb_items(category);
+CREATE INDEX IF NOT EXISTS idx_kb_items_topic ON kb_items(topic);

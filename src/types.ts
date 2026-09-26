@@ -7,6 +7,12 @@ export interface Product {
   id: string;
   name: string;
   price: number;
+  image?: string;
+  category?: string;
+  url?: string;
+  oldPrice?: number | null;
+  isOffer?: boolean;
+  offerText?: string;
 }
 
 export interface TeamMember {
@@ -31,4 +37,4 @@ export interface Order {
   createdAt: string;
 }
 
-export type View = 'Dashboard' | 'OrderEntry' | 'Reports' | 'DailyReport' | 'WeeklyReport' | 'MonthlyReport' | 'YearlyReport' | 'Settings';
+export type View = 'Dashboard' | 'ProductList' | 'KnowledgeBase' | 'OrderEntry' | 'Reports' | 'DailyReport' | 'WeeklyReport' | 'MonthlyReport' | 'YearlyReport' | 'Settings';

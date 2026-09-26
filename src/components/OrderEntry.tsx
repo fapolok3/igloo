@@ -28,6 +28,27 @@ export default function OrderEntry({ products, members, onAddOrder }: OrderEntry
   });
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Support pre-selected product from Product List module
+  useEffect(() => {
+    try {
+      const quick = sessionStorage.getItem('igloo_quick_order_product');
+      if (quick) {
+        sessionStorage.removeItem('igloo_quick_order_product');
+        const match = products.find(p => p.name === quick);
+        if (match) {
+          setFormData(prev => ({
+            ...prev,
+            product: match.name,
+            unitPrice: match.price
+          }));
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [products]);
 
   useEffect(() => {
     if (members.length > 0 && !formData.assignedPerson) {
@@ -49,8 +70,9 @@ export default function OrderEntry({ products, members, onAddOrder }: OrderEntry
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
     if (!formData.clientName || !formData.phone || !formData.product || !formData.assignedPerson) {
-      alert('Please fill in all required fields');
+      setErrorMessage('Please fill in all required fields (Client Name, Phone, Product, Assigned Person)');
       return;
     }
 
@@ -83,8 +105,8 @@ export default function OrderEntry({ products, members, onAddOrder }: OrderEntry
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="bg-[#1E293B] px-6 py-3 flex items-center justify-between">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="bg-[#1E293B] dark:bg-slate-950 px-6 py-3 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
             <ShoppingCart className="text-white w-5 h-5" />
             <h2 className="text-sm font-bold text-white uppercase tracking-widest">New Order Entry</h2>
@@ -98,48 +120,54 @@ export default function OrderEntry({ products, members, onAddOrder }: OrderEntry
         </div>
         
         <form onSubmit={handleSubmit} className="p-6">
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold rounded-lg flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{errorMessage}</span>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Order Date</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Order Date</label>
               <input
                 type="date"
                 required
                 value={formData.date}
                 onChange={e => setFormData(p => ({ ...p, date: e.target.value }))}
-                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50/50"
+                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-white"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Client Name</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Client Name</label>
               <input
                 type="text"
                 required
                 placeholder="Full Name"
                 value={formData.clientName}
                 onChange={e => setFormData(p => ({ ...p, clientName: e.target.value }))}
-                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 focus:ring-1 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 outline-none bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Phone Number</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Phone Number</label>
               <input
                 type="text"
                 required
                 placeholder="01xxxxxxxxx"
                 value={formData.phone}
                 onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))}
-                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 focus:ring-1 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 outline-none bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Sales Source</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Sales Source</label>
               <select
                 value={formData.source}
                 onChange={e => setFormData(p => ({ ...p, source: e.target.value as OrderSource }))}
-                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 focus:ring-1 focus:ring-blue-500 outline-none bg-white"
+                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 outline-none bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
               >
                 <option value="Website">Website Store</option>
                 <option value="Facebook">Facebook Page</option>
@@ -147,27 +175,27 @@ export default function OrderEntry({ products, members, onAddOrder }: OrderEntry
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Select Product</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Select Product</label>
               <select
                 required
                 value={formData.product}
                 onChange={handleProductChange}
-                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 focus:ring-1 focus:ring-blue-500 outline-none bg-white font-medium"
+                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 outline-none bg-white dark:bg-slate-950 text-slate-900 dark:text-white font-medium"
               >
                 <option value="">-- Choose Product --</option>
                 {products.map(p => (
-                  <option key={p.id} value={p.name}>{p.name}</option>
+                  <option key={p.id} value={p.name}>{p.name} — ৳{p.price}</option>
                 ))}
               </select>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Assigned Person</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Assigned Person</label>
               <select
                 required
                 value={formData.assignedPerson}
                 onChange={e => setFormData(p => ({ ...p, assignedPerson: e.target.value }))}
-                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 focus:ring-1 focus:ring-blue-500 outline-none bg-white font-medium"
+                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 outline-none bg-white dark:bg-slate-950 text-slate-900 dark:text-white font-medium"
               >
                 <option value="">-- Select Member --</option>
                 {members.map(m => (
@@ -178,43 +206,43 @@ export default function OrderEntry({ products, members, onAddOrder }: OrderEntry
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Qty</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Qty</label>
                 <input
                   type="number"
                   min="1"
                   required
                   value={formData.qty}
                   onChange={e => setFormData(p => ({ ...p, qty: parseInt(e.target.value) || 0 }))}
-                  className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 focus:ring-1 focus:ring-blue-500 outline-none text-center font-bold"
+                  className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 outline-none text-center font-bold bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Unit Price</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Unit Price</label>
                 <input
                   type="number"
                   required
                   value={formData.unitPrice}
                   onChange={e => setFormData(p => ({ ...p, unitPrice: parseFloat(e.target.value) || 0 }))}
-                  className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 focus:ring-1 focus:ring-blue-500 outline-none text-right font-medium"
+                  className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 outline-none text-right font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
                 />
               </div>
             </div>
 
-            <div className="md:col-span-1 p-3 bg-blue-50 rounded-lg border border-blue-100 flex flex-col justify-center">
+            <div className="md:col-span-1 p-3 bg-blue-50 dark:bg-blue-950/40 rounded-lg border border-blue-100 dark:border-blue-900/50 flex flex-col justify-center">
               <label className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1 text-center">Grand Total</label>
-              <div className="text-xl font-black text-blue-700 text-center">
+              <div className="text-xl font-black text-blue-700 dark:text-blue-300 text-center">
                 ৳{totalAmount.toLocaleString()}
               </div>
             </div>
 
             <div className="space-y-1 md:col-span-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Order Notes</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Order Notes</label>
               <input
                 type="text"
                 placeholder="Notes..."
                 value={formData.notes}
                 onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))}
-                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 focus:ring-1 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-1.5 text-sm rounded border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-blue-500 outline-none bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
               />
             </div>
           </div>
